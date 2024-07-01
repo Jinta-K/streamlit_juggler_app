@@ -5,6 +5,9 @@ name = "pypi"
 
 [packages]
 streamlit = "*"
+scipy = "*"
+matplotlib = "*"
+altair = "*"
 
 [dev-packages]
 
