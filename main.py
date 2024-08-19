@@ -4,73 +4,36 @@ import streamlit as st
 import numpy as np
 import scipy.stats as stats
 
-# パラメータ
-n = 20000  # 回転数
-alpha = 0.05  # 有意水準
-hit_num = 160 # 大当たり回数
-sample_proportion = hit_num / n # 合算確率
+import streamlit as st
 
-# ウィルソンのスコア区間の計算
-z = stats.norm.ppf(1 - alpha / 2)
-phat = sample_proportion
-ci_lower = (phat + z**2 / (2*n) - z * np.sqrt((phat*(1-phat) + z**2 / (4*n)) / n)) / (1 + z**2 / n)
-ci_upper = (phat + z**2 / (2*n) + z * np.sqrt((phat*(1-phat) + z**2 / (4*n)) / n)) / (1 + z**2 / n)
-
-# 結果の表示
-print(f"95%信頼区間: [{ci_lower}, {ci_upper}]")
-
-# 数直線のデータを生成
-data = pd.DataFrame({'x': [i for i in range(200, 101, -1)]})
-data['x'] = 1 / data['x']
-
-# 特定の値に縦の実線を引くためのデータ
-vlines_data = pd.DataFrame({
-    'x': [1/163.8, 1/159.1, 1/148.6, 1/135.2, 1/126.8, 1/114.6],
-    'color': ['red'] * 6,
-    'number': [1, 2, 3, 4, 5, 6]
-})
-
-# 点線を引くための任意の数値を追加（例として1/150を使用）
-dotted_lines_data = pd.DataFrame({
-    'x': [ci_lower, ci_upper],
-    'y': [100, 100],
-    'color': ['blue']*2
-})
-
-# 数直線のチャートを作成
-line_chart = alt.Chart(data).mark_line(color='gray').encode(
-    x=alt.X('x', scale=alt.Scale(domain=(1/200, 1/100)))
+st.set_page_config(
+    page_title="MY Juggler App",
+    page_icon="🤡",
+    layout="wide",
+    initial_sidebar_state="expanded",
 )
+# CSSファイルの読み込み
+with open("style.css") as f:
+    style = f.read()
+    st.markdown(f"<style>{style}</style>",unsafe_allow_html=True)
 
-# 縦の実線を追加
-vlines = alt.Chart(vlines_data).mark_rule(color='red').encode(
-    x='x:Q',
-)
 
-# 縦の点線を追加
-dotted_lines = alt.Chart(dotted_lines_data).mark_rule(color='blue', strokeDash=[5, 5]).encode(
-    x='x:Q',
-)
+# タイトルの追加
+st.title("MY Juggler App")
+# 3つの入力フォームを縦に並べる
+with st.form("my_form"):
+    game_num = st.number_input("Games", 0, key="game_num_form")
+    big_bonus_num = st.number_input("Big Bonus", 0, key="big_bonus_form")
+    regular_bonus_num = st.number_input("Regular Bonus", 0, key="regular_bonus_form")
+    # フォームの送信ボタン
+    submitted = st.form_submit_button(label="実行")
 
-# 区間を色付け
-area = alt.Chart(dotted_lines_data).mark_area(color='lightblue',opacity=0.2).encode(
-    x='x:Q',
-    y='y:Q'
-)
+# 入力フォームの下にタブビューを作成
+tab1, tab2 = st.tabs(["Expected Value", "Probability"])
 
-# 番号のテキストを追加
-text = alt.Chart(vlines_data).mark_text(
-    align='center',
-    baseline='top',
-    dy=65  # テキストの位置を調整
-).encode(
-    x='x:Q',
-    text='number:N'  # 番号を表示
-)
-
-# チャートを合成して表示
-chart = (line_chart + vlines + dotted_lines + area + text).properties(
-    height=200
-)
-
-st.altair_chart(chart,use_container_width=True)
+with tab1:
+    st.write("これはタブ1の内容です。")
+    st.write(f"入力フォーム1の値: {game_num}")
+with tab2:
+    st.write("これはタブ2の内容です。")
+    st.write("タブ2に別の表示内容を追加できます。")
