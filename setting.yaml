@@ -1,0 +1,44 @@
+IAM:
+  BB:
+    setting_1: 10/2731
+    setting_2: 10/2697
+    setting_3: 10/2697
+    setting_4: 1/259
+    setting_5: 1/259
+    setting_6: 1/255
+  RB:
+    setting_1: 10/4398
+    setting_2: 10/3996
+    setting_3: 1/331
+    setting_4: 10/3151
+    setting_5: 1/255
+    setting_6: 1/255
+  E:
+    setting_1: 97.0
+    setting_2: 98.0
+    setting_3: 99.5
+    setting_4: 101.1
+    setting_5: 103.3
+    setting_6: 105.5
+MY:
+  BB:
+    setting_1: 10/2731
+    setting_2: 10/2708
+    setting_3: 10/2664
+    setting_4: 1/254
+    setting_5: 1/2401
+    setting_6: 1/2291
+  RB:
+    setting_1: 10/4096
+    setting_2: 10/3855
+    setting_3: 10/3361
+    setting_4: 1/290
+    setting_5: 10/2686
+    setting_6: 10/2291
+  E:
+    setting_1: 97.0
+    setting_2: 98.0
+    setting_3: 99.9
+    setting_4: 102.8
+    setting_5: 105.3
+    setting_6: 109.4
