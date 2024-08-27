@@ -3,6 +3,7 @@ import pandas as pd
 import streamlit as st
 import numpy as np
 import scipy.stats as stats
+from scipy.integrate import quad
 import yaml
 from fractions import Fraction
 
@@ -92,24 +93,39 @@ with tab1:
     vertical_lines_rb = alt.Chart(pd.DataFrame({'x': true_probabilities_of_rb})).mark_rule(color='red',strokeDash=[5, 5]).encode(
         x='x:Q'
     )
-    chart_rb_with_lines = chart_of_bb + vertical_lines_rb
+    chart_rb_with_lines = chart_of_rb + vertical_lines_rb
 
     if (alpha_post_of_rb + beta_post_of_rb - 2) != 0 and (alpha_post_of_bb + beta_post_of_bb - 2) != 0:
-        # 各真値に対する事後確率を計算
-        true_prob_posteriors_bb = [my_function.posterior_pdf(p_true, alpha_post_of_bb, beta_post_of_bb) for p_true in true_probabilities_of_bb]
-        true_prob_posteriors_rb = [my_function.posterior_pdf(p_true, alpha_post_of_rb, beta_post_of_rb) for p_true in true_probabilities_of_rb]
+        # 各真値のベータ分布との重なり面積を計算
+        overlap_areas_bb = []
+        for p_true in true_probabilities_of_bb:
+            alpha_true = p_true * (alpha_post_of_bb + beta_post_of_bb)
+            beta_true = (1 - p_true) * (alpha_post_of_bb + beta_post_of_bb)
+            
+            beta_true_pdf = stats.beta(alpha_true, beta_true).pdf
+            
+            overlap_area, _ = quad(lambda p: np.minimum(stats.beta.pdf(p, alpha_post_of_bb, beta_post_of_bb), beta_true_pdf(p)), 0, 1)
+            overlap_areas_bb.append(overlap_area)
 
-        # 各設定の確率
-        total_prob_bb = sum(true_prob_posteriors_bb)
-        true_prob_posteriors_bb = [prob / total_prob_bb for prob in true_prob_posteriors_bb]
+        overlap_areas_rb = []
+        for p_true in true_probabilities_of_rb:
+            alpha_true = p_true * (alpha_post_of_rb + beta_post_of_rb)
+            beta_true = (1 - p_true) * (alpha_post_of_rb + beta_post_of_rb)
+            
+            beta_true_pdf = stats.beta(alpha_true, beta_true).pdf
+            
+            overlap_area, _ = quad(lambda p: np.minimum(stats.beta.pdf(p, alpha_post_of_rb, beta_post_of_rb), beta_true_pdf(p)), 0, 1)
+            overlap_areas_rb.append(overlap_area)
 
-        total_prob_rb = sum(true_prob_posteriors_rb)
-        true_prob_posteriors_rb = [prob / total_prob_rb for prob in true_prob_posteriors_rb]
+        # 確率の正規化
+        total_overlap_area_bb = sum(overlap_areas_bb)
+        true_prob_posteriors_bb = [area / total_overlap_area_bb for area in overlap_areas_bb]
+        total_overlap_area_rb = sum(overlap_areas_rb)
+        true_prob_posteriors_rb = [area / total_overlap_area_rb for area in overlap_areas_rb]
 
         excepted_values = []
         for pattern in range(6):
             excepted_values.append(((true_prob_posteriors_bb[pattern] + true_prob_posteriors_rb[pattern]) / 2.0) * expected_return[pattern])
-
         # 結果の表示
         st.write(f"### Expected values {sum(excepted_values)}")
         st.subheader("RB probability distribution")
