@@ -3,6 +3,7 @@ import pandas as pd
 import streamlit as st
 import numpy as np
 import scipy.stats as stats
+from scipy.stats import geom
 from scipy.integrate import quad
 import yaml
 from fractions import Fraction
@@ -33,30 +34,31 @@ with open(yaml_file_path, 'r') as file:
 
 # タイトルの追加
 st.title("MY Juggler App")
-# 3つの入力フォームを縦に並べる
-with st.form("my_form"):
-    machine_series = st.selectbox("Series", ["SアイムジャグラーEX-TP","マイジャグラーV"], key="machine_series")
-    game_num = st.number_input("Games", 0, key="game_num_form")
-    big_bonus_num = st.number_input("Big Bonus", 0, key="big_bonus_form")
-    regular_bonus_num = st.number_input("Regular Bonus", 0, key="regular_bonus_form")
-    # フォームの送信ボタン
-    submitted = st.form_submit_button(label="実行")
 
-machine_series_code = machine_series_code_dic[machine_series]
-# 入力フォームの下にタブビューを作成
+# 入力フォームの上にタブビューを作成
 tab1, tab2= st.tabs(["Expected Value", "Probability"])
 
 with tab1:
-    # 事前分布のパラメータは事前情報なしとする
-    alpha_prior = 1.0
-    beta_prior = 1.0
+    # 入力フォーム
+    with st.form("my_form"):
+        machine_series = st.selectbox("Series", ["SアイムジャグラーEX-TP","マイジャグラーV"], key="machine_series")
+        game_num = st.number_input("Games", 0, key="game_num_form")
+        big_bonus_num = st.number_input("Big Bonus", 0, key="big_bonus_form")
+        regular_bonus_num = st.number_input("Regular Bonus", 0, key="regular_bonus_form")
+        # フォームの送信ボタン
+        submitted = st.form_submit_button(label="実行")
 
+    # 台の設定
+    machine_series_code = machine_series_code_dic[machine_series]
     # 各設定のBonus確率の真値
     true_probabilities_of_bb = [float(Fraction(value).limit_denominator()) for value in machine_setting_dic[machine_series_code]["BB"].values()]
     true_probabilities_of_rb = [float(Fraction(value).limit_denominator()) for value in machine_setting_dic[machine_series_code]["RB"].values()]
-
     # 各設定の出玉率
     expected_return = list(machine_setting_dic[machine_series_code]["E"].values())
+    
+    # 事前分布のパラメータは事前情報なしとする
+    alpha_prior = 1.0
+    beta_prior = 1.0
 
     # 事後分布のパラメータを計算
     alpha_post_of_bb = alpha_prior + big_bonus_num
@@ -134,5 +136,42 @@ with tab1:
         st.altair_chart(chart_rb_with_lines,use_container_width=True)
 
 with tab2:
-    st.write("これはタブ2の内容です。")
-    st.write("タブ2に別の表示内容を追加できます。")
+    selected_number = st.selectbox('Setting', [1, 2, 3, 4, 5, 6])
+    # ユーザーが指定する回数
+    max_draws = st.number_input('Games', min_value=1, max_value=1000, value=100)
+
+    # 各設定のBonus確率の真値
+    true_probabilities_of_bb = [float(Fraction(value).limit_denominator()) for value in machine_setting_dic[machine_series_code]["BB"].values()]
+    true_probabilities_of_rb = [float(Fraction(value).limit_denominator()) for value in machine_setting_dic[machine_series_code]["RB"].values()]
+
+    # どちらかが当たるまでの確率
+    combined_probability = true_probabilities_of_bb[selected_number-1] + true_probabilities_of_rb[selected_number-1] - (true_probabilities_of_bb[selected_number-1] * true_probabilities_of_rb[selected_number-1])
+
+    # 幾何分布を使用して、どちらかが当たるまでに引く回数の分布を計算
+    draws = np.arange(1, 1001)
+    probability_distribution = geom.pmf(draws, combined_probability)
+
+    # データフレームを作成
+    df = pd.DataFrame({
+        'Number of Games': draws,
+        'Probability': probability_distribution,
+        'Highlight': np.where(draws <= max_draws, 'Highlight', 'Normal')
+    })
+    # ベースとなるラインチャート
+    base = alt.Chart(df).mark_line().encode(
+        x=alt.X('Number of Games:Q'),
+        y=alt.Y('Probability:Q',axis=alt.Axis(labels=False, title=None, grid=True))
+    )
+    # 色を塗るためのエリアチャート
+    highlight = alt.Chart(df[df['Highlight'] == 'Highlight']).mark_area(opacity=0.2, color='blue').encode(
+        x='Number of Games:Q',
+        y='Probability:Q'
+    )
+
+    # ベースとハイライトを重ねる
+    chart = alt.layer(base, highlight).interactive()
+    # 累積分布関数 (CDF) を使って指定した回数までに当たる確率を計算
+    cumulative_probability = geom.cdf(max_draws, combined_probability)
+
+    st.write(f"### {cumulative_probability*100:.4f}%")
+    st.altair_chart(chart,use_container_width=True)
