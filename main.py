@@ -35,10 +35,19 @@ with open(yaml_file_path, 'r') as file:
 # タイトルの追加
 st.title("MY Juggler App")
 
-# 入力フォームの上にタブビューを作成
-tab1, tab2= st.tabs(["Expected Value", "Probability"])
+# サイドバーでページ選択
+st.sidebar.write("### Choose Page")
+if st.sidebar.button("Expected Value", use_container_width=True):
+    st.session_state.page = "Expected Value"
+if st.sidebar.button("Probability", use_container_width=True):
+    st.session_state.page = "Probability"
 
-with tab1:
+# セッション状態でページを管理
+if 'page' not in st.session_state:
+    st.session_state.page = "Expected Value"
+page = st.session_state.page
+
+if page == "Expected Value":
     # 入力フォーム
     with st.form("my_form"):
         machine_series = st.selectbox("Series", ["SアイムジャグラーEX-TP","マイジャグラーV"], key="machine_series")
@@ -135,10 +144,12 @@ with tab1:
         st.subheader("RB probability distribution")
         st.altair_chart(chart_rb_with_lines,use_container_width=True)
 
-with tab2:
+elif page == "Probability":
+    machine_series = st.selectbox("Series", ["SアイムジャグラーEX-TP","マイジャグラーV"], key="machine_series")
     selected_number = st.selectbox('Setting', [1, 2, 3, 4, 5, 6])
     # ユーザーが指定する回数
     max_draws = st.number_input('Games', min_value=1, max_value=1000, value=100)
+    machine_series_code = machine_series_code_dic[machine_series]
 
     # 各設定のBonus確率の真値
     true_probabilities_of_bb = [float(Fraction(value).limit_denominator()) for value in machine_setting_dic[machine_series_code]["BB"].values()]
